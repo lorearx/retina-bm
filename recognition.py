@@ -2,49 +2,68 @@ import os
 from feature_extraction import call_processing, call_template_computing
 from termcolor import colored
 import numpy as np
-from scipy.stats import pearsonr
 from click_spinner import spinner
-from dtw import dtw
 
 FOLDER = "samples_for_recognition"
 DATABASE_FOLDER = "retina_database"
 
-def compute_metric(vector1, vector2):
-    v1 = vector1 / np.linalg.norm(vector1)
-    v2 = vector2 / np.linalg.norm(vector2)
-    #dist, cost, acc, path = dtw(v1, v2, dist=lambda x, y: np.abs(x - y))
-    corr, p_value = pearsonr(v1, v2)
-    print(f"Similarity: {corr:.5f}")
+def compute_metric(x, y):
+    xb = np.unpackbits(np.array(x, dtype=np.uint8))
+    yb = np.unpackbits(np.array(y, dtype=np.uint8))
+    hamming_distance = np.count_nonzero(xb != yb)
+    return hamming_distance
 
-def find_match(template):
+def find_match(template, verbose=False):
+    print()
     match = None
     templates = os.listdir(DATABASE_FOLDER)
     for template_name in templates:
         saved_template = np.load(os.path.join(DATABASE_FOLDER, template_name))
-        compute_metric(template, saved_template)
+        metric = compute_metric(template, saved_template)
+        if (verbose):
+            print(f"\tMetric obtained for {template_name}: {metric}")
+        if (metric < 1000):
+            match = template_name
+            break
     return match
+
+def execute_recognition(path_to_individual, samples, index_sample, individual_selected, verbose=False):
+    print("Processing sample...", end='')
+    with spinner():
+        path_to_sample = os.path.join(path_to_individual, samples[index_sample])
+        image_processed, optic_disk_center = call_processing(path_to_sample)
+        if (not optic_disk_center is None):
+            template = call_template_computing(image_processed, optic_disk_center, individual_selected, saving=False)
+            if (not template is None):
+                match = find_match(template, verbose)
+                if (not match is None):
+                    text = colored(f"INDIVIDUAL {individual_selected} KNOWN. ACCESS GRANTED TO {match}", "green", attrs=["reverse", "blink"])
+                    print()
+                    print(text)
+                else:
+                    text = colored(f"UNKNOWN INDIVIDUAL. ACCESS DENIED", "red", attrs=["reverse", "blink"])
+                    print()
+                    print(text)
+            else:
+                text = colored(f"There's a problem with the sample provided (no code generated with center {optic_disk_center})", "red", attrs=["reverse", "blink"])
+                print()
+                print(text)
+        else:
+            text = colored("There's a problem with the sample provided (no optic disk)", "red", attrs=["reverse", "blink"])
+            print()
+            print(text)
 
 def run_recognition():
     text = colored("[RUNNING RECOGNITION MODE]", "light_magenta", attrs=["reverse", "blink"])
     print(text)
     individuals = os.listdir(FOLDER)
-    print(f"The invidivuals to be recognised are: {individuals}")
-    selected = int(input("Please, select one:")) - 1
+    print(f"The invidivuals to be recognised are:")
+    for i, ind in enumerate(individuals):
+        print(f"\t[{i+1}] {ind}")
+    selected = int(input("Please, select one: ")) - 1
     individual_selected = individuals[selected]
     path_to_individual = os.path.join(FOLDER, individual_selected)
     samples = os.listdir(path_to_individual)
-
-    # TODO: selecting sample
-    print("Processing sample...", end='')
-    with spinner():
-        path_to_sample = os.path.join(path_to_individual, samples[0])
-        image_processed = call_processing(path_to_sample)
-        template = call_template_computing(image_processed, individual_selected, saving=False)
-        if (not template is None):
-            match = find_match(template)
-            if (not match is None):
-                text = colored("INDIVIDUAL REGISTERED", "green", attrs=["reverse", "blink"])
-                print(text)
-            else:
-                text = colored("UNKNOWN INDIVIDUAL", "red", attrs=["reverse", "blink"])
-                print(text)
+    num_samples = len(samples)
+    for index_sample in range(num_samples):
+        execute_recognition(path_to_individual, samples, index_sample, individual_selected)

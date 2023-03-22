@@ -1,13 +1,14 @@
 from enrollment import run_enrollment
 from recognition import run_recognition
-import sys
+from demo import run_demo
 from pyfiglet import Figlet
 
 ENROLLMENT_MODE = "1"
 RECOGNITION_MODE = "2"
+DEMO_MODE = "3"
 EXIT_MODE = "exit"
 
-MODES = [ENROLLMENT_MODE, RECOGNITION_MODE, EXIT_MODE]
+MODES = [ENROLLMENT_MODE, RECOGNITION_MODE, DEMO_MODE, EXIT_MODE]
 
 class bcolors:
     HEADER = '\033[95m'
@@ -25,6 +26,8 @@ def run_mode(mode):
         run_enrollment()
     elif (mode == RECOGNITION_MODE):
         run_recognition()
+    elif (mode == DEMO_MODE):
+        run_demo()
 
 f = Figlet(font='slant')
 print(f.renderText('RETINA-BM'))
@@ -33,7 +36,7 @@ valid_mode = False
 exit = False
 
 while (not exit):
-    mode_selected = input(f"This system has two modes:\n\t[1] {bcolors.OKBLUE}STAGE 1 (Creation){bcolors.ENDC}\n\t[2] {bcolors.OKCYAN}STAGE 2 (Recognition){bcolors.ENDC}\nPlease, select one: ")
+    mode_selected = input(f"This system has 3 modes:\n\t[1] {bcolors.OKBLUE}STAGE 1 (Creation){bcolors.ENDC}\n\t[2] {bcolors.OKCYAN}STAGE 2 (Recognition){bcolors.ENDC}\n\t[3] {bcolors.OKGREEN}DEMO MODE (Showing intermediate results){bcolors.ENDC}\nPlease, select one: ")
     valid_mode = mode_selected in MODES
     exit = mode_selected == EXIT_MODE
     if (not exit):
