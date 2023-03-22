@@ -1,3 +1,6 @@
+"""
+    Script taken from https://github.com/cuevas1208/fingerprint_recognition/blob/master/utils/crossing_number.py
+"""
 import cv2 as cv
 import numpy as np
 
